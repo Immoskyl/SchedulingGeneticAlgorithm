@@ -1,7 +1,16 @@
-package allInOne;
+package allInOne; //this we are not allowed to deliver more than one class, I called the package and the class
+                  //AllInOne, because everything should be separated, but anyway...
 
 /**
- * Created by immoskyl on 25/02/17.
+ * Intelligent Systems CS4006 Assignement Spring Semester 2016-17
+ * University of Limerick
+ *
+ * Created by Romain ROUX
+ * Last modified on 28/02/2017
+ * my UL ID: 16083733
+ *
+ * I assure all work done throuhough this project is done all my myself.
+ * Do not hesitate to mail me if any question.
  */
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -14,6 +23,7 @@ import java.util.Scanner;
 public class AllInOne {
 
     //attributes
+
     private int nbGenerations = 0;
     private int popSize = 0;
     private int nbStudents = 0;
@@ -26,8 +36,8 @@ public class AllInOne {
     private List<List<List<Integer>>> population = new ArrayList<>();
     private List<Integer> populationFitnessCost = new ArrayList<>();
 
-    //getter and setter methods
 
+    //getter and setter methods
 
     public void addToPopulationFitnessCost (int fitnessCost) {
         this.populationFitnessCost.add(fitnessCost);
@@ -127,8 +137,15 @@ public class AllInOne {
         this.nbModulesInCourse = nbModulesInCourse;
     }
 
+
     //methods and procedures
 
+    /**
+     * returns a random number including max and excluding min
+     * @param min int minimum
+     * @param max int maximum
+     * @return
+     */
     private int randomWithRange(int min, int max)
     {
         int range = (max - min) + 1;
@@ -136,6 +153,11 @@ public class AllInOne {
     } //randomWithRange
 
 
+    /**
+     * generates, rather randomly or specified, the studentModules,
+     * considering the parameters already registered in the program.
+     * Each student is allocated the number of module in a course among all the module available
+     */
     private void studentsModulesArrayCreation () {
         Scanner scanner = new Scanner(System.in);
         List<List<Integer>> list = new ArrayList<>();
@@ -183,8 +205,14 @@ public class AllInOne {
                 break;
         }
         setStudentsModules(list);
-    }
+    } //studentModuleArrayCreation()
 
+
+    /**
+     * asks the user to register the number of generation, the population size, the number of students,
+     * the number of total modules, and the number of modules in a course, checking integrity for each parameter and
+     * asking confirmation. Then deduces the number of exam days.
+     */
     private void basicParametersCreation () {
         String strInput;
         int intInput;
@@ -216,6 +244,7 @@ public class AllInOne {
                 intInput = scanner.nextInt();
                 if (intInput > getNbModules()) {
                     System.out.println("The number of module in a course must not be greater than the total number of modules!");
+                    System.out.println("Type again");
                 } else {
                     break;
                 }
@@ -236,6 +265,11 @@ public class AllInOne {
         setNbExamDays(getNbModules()/2);
     } //basicParameterCreation()
 
+
+    /**
+     * generates a random ordering of an exam schedule, assuring that every module picked in the ordering is different
+     * @return ordering
+     */
     private List<List<Integer>> generateOrdering() {
         List<List<Integer>> list = new ArrayList<>();
         int chosenModule;
@@ -253,7 +287,7 @@ public class AllInOne {
                 //selects a random module still available...
                 do {
                     chosenModule = availableModules.get(randomWithRange(0, availableModules.size() - 1));
-                } while (chosenModule == 0);               //integrity rule: availableModules indexes will all be 0
+                } while (chosenModule == 0);                   //integrity rule: availableModules indexes will all be 0
                 availableModules.set(chosenModule - 1, 0);     //when the for loop finishes, so no need to check it
 
                 // ...and adds it
@@ -261,15 +295,26 @@ public class AllInOne {
             }
         }
         return list;
-    }
+    } //generatesOrdering()
 
 
+    /**
+     * factorisation procedure
+     */
     public void setParameters() {
         basicParametersCreation();
         studentsModulesArrayCreation();
     } //setParameters()
 
-    private boolean areOrderingsDiff() { //only checks if the last ordering is different from the others
+
+    /**
+     * Checks for atomicity of the last ordering in the population
+     * Checking only the last ordering is fine because the check is made for every ordering added to the population
+     * so every ordering in the population is checked (besides the first, but the first is alone so the check would
+     * be pointless)
+     * @return true if the last ordering is different from any other in the population
+     */
+    private boolean areOrderingsDiff() { //
         if (getCurrentPopulationSize() == 1) {
             return true;
         }
@@ -279,8 +324,14 @@ public class AllInOne {
             }
         }
         return true;
-    }
+    } //areOrderingDiff()
 
+
+    /**
+     * fill the stored attribute population (its size being already defined) with randomly generated orderings.
+     * For each ordering added, it checks if it is different from every other. If not so, removes it, and creates
+     * another randomly generated ordering, and tests it again, until a different one is created.
+     */
     public void generatePopulation () {
         for (int i = 0; i !=getPopSize(); ++i) {
             addToPopulation(generateOrdering());
@@ -289,16 +340,27 @@ public class AllInOne {
                 addToPopulation(generateOrdering());
             }
         }
-    }
+    } //generatePopulation()
 
+
+    /**
+     * Calculates the fitness cost of each ordering in the population, and stores them in the PopulationFitnessCost
+     * list, that shares the same index than the Population list
+     */
     public void generatePopulationFitnessCost () {
         System.out.println("Fitness cost calculating...");
 
         for (int i = 0; i != getPopSize(); ++i) {
             addToPopulationFitnessCost(calculateFitnessCost(getOrderingFromPopulation(i)));
         }
-    }
+    } //generatePopulationFitnessCost()
 
+
+    /**
+     * Calculates the fitness cost of a given ordering, and returns the fitness cost as an int
+     * @param ordering List<List<Integer>>
+     * @return fitness cost int
+     */
     public int calculateFitnessCost (List<List<Integer>> ordering) {
         int subSum = 0;
         for (int i = 0; i != getStudentsModules().size(); ++i) {
@@ -307,10 +369,17 @@ public class AllInOne {
             }
         }
         return subSum;
-    }
+    } //calculateFitnessCost()
 
+
+    /**
+     * Checks overlapping modules of each student for a given ordering.
+     * @param studentModules List<integer> eg. the list of students, and their respective modules
+     * @param ordering List<List<Integer>>
+     * @return true if at least one of the students has two modules taking place the same day eg. in the same PairOfModules
+     */
     private boolean hasStudentExamOverlapping(List<Integer> studentModules, List<List<Integer>> ordering) {
-        int matchingModules = 0;
+        int matchingModules;
         for (List<Integer> pairOfModule : ordering) {
             matchingModules = 0;
             for (Integer j : pairOfModule) {
@@ -325,12 +394,16 @@ public class AllInOne {
             }
         }
         return false;
-    }
+    } //hasStudentExamOverlapping()
 
 
-    //read/write files
+    //write files
 
-
+    /**
+     * generic file writing procedure, handling i/o 0exceptions
+     * @param address String address of the file to write (creates it if it does not already exists)
+     * @param text String text to write in the file
+     */
     private void writeToFile(String address, String text) {
         BufferedWriter bw = null;
         FileWriter fw = null;
@@ -351,8 +424,12 @@ public class AllInOne {
                 System.out.println("Sorry it seems impossible to write the file");
             }
         }
-    }
+    } //writeToFile()
 
+
+    /**
+     * writes the wanted output ofr the interim submission on the right file
+     */
     public void writeResults() {
         String address = "AI17.txt";
         String newline = System.getProperty("line.separator");
@@ -363,7 +440,7 @@ public class AllInOne {
         //write students schedules
         for (int i = 0; i != getStudentsModules().size(); ++i) {
             builder.append("Student ");
-            builder.append(i);
+            builder.append(i + 1);
             builder.append(": ");
             for (Integer module : getStudentsModules().get(i)) {
                 builder.append("M");
@@ -378,7 +455,7 @@ public class AllInOne {
         //write orderings
         for (int i = 0; i != getCurrentPopulationSize(); ++i) {
             builder.append("Order ");
-            builder.append(i);
+            builder.append(i + 1);
             builder.append(" (Cost ");
             builder.append(getFitnessCost(i));
             builder.append("):");
@@ -399,13 +476,18 @@ public class AllInOne {
         }
 
         writeToFile(address, builder.toString());
-    }
+    } //writeResults()
 
+    /**
+     * pretty straight forward main. Just read the methods' names adn it should be fine to understand what's going on
+     * Everything else is detailed in the other functions, and the handout given for the project.
+     * @param args we don't need that
+     */
     public static void main(String[] args) {
         AllInOne main = new AllInOne();
         main.setParameters();
         main.generatePopulation();
         main.generatePopulationFitnessCost();
         main.writeResults();
-    }
+    } //psvm()
 }
