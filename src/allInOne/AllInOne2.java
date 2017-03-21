@@ -11,21 +11,20 @@ package allInOne; //this we are not allowed to deliver more than one class, I ca
  *
  * I assure all work done throuhough this project is done all my myself.
  * Do not hesitate to mail me if any question.
- *
- *
- * file should be named is16083733.java
  */
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class AllInOne {
+public class AllInOne2 {
 
     //attributes
+
+    private int chancesOfMutation = 0;
+    private int chancesOfCrossover = 0;
 
     private int nbGenerations = 0;
     private int popSize = 0;
@@ -36,42 +35,50 @@ public class AllInOne {
     private List<List<Integer>> studentsModules;
     private List<List<Integer>> examSchedule;
 
-    private List<List<List<Integer>>> population = new ArrayList<>();
-    private List<Integer> populationFitnessCost = new ArrayList<>();
+    private List<List<List<List<Integer>>>> populations = new ArrayList<>();
+    private List<List<Integer>> populationFitnessCosts = new ArrayList<>();
 
 
     //getter and setter methods
 
-    public void addToPopulationFitnessCost (int fitnessCost) {
-        this.populationFitnessCost.add(fitnessCost);
+    public void addToPopulationFitnessCost (int generation, int fitnessCost) {
+        this.populationFitnessCosts.get(generation).add(fitnessCost);
     }
 
     public void removeFromPopulationFitnessCost (int index) {
-        this.populationFitnessCost.remove(index);
+        this.populationFitnessCosts.remove(index);
     }
 
-    public int getFitnessCost (int index) {
-        return populationFitnessCost.get(index);
+    public int getFitnessCost (int generation, int index) {
+        return populationFitnessCosts.get(generation).get(index);
     }
 
-    public List<List<Integer>> getOrderingFromPopulation(int index) {
-        return population.get(index);
+    public List<List<Integer>> getOrderingFromPopulation(int generation, int index) {
+        return populations.get(generation).get(index);
     }
 
-    public void addToPopulation (List<List<Integer>> ordering) {
-        this.population.add(ordering);
+    public void addToPopulation (int generation, List<List<Integer>> ordering) {
+        this.populations.get(generation).add(ordering);
     }
 
-    public void removeFromPopulation (List<List<Integer>> ordering) {
-        this.population.remove(ordering);
+    public void iterateGeneration() {
+        populations.add(populations.get(getGeneration())); //verrrrrrrrrrrrry cheesy line (as it is base on populations size it increments)
     }
 
-    public void removeFromPopulation (int index) {
-        this.population.remove(index);
+    public int getGeneration() {
+        return populations.size();
     }
 
-    public int getCurrentPopulationSize() {
-        return population.size();
+    public void removeFromPopulation (int generation, List<List<Integer>> ordering) {
+        this.populations.get(generation).remove(ordering);
+    }
+
+    public void removeFromPopulation (int generation, int index) {
+        this.populations.get(generation).remove(index);
+    }
+
+    public int getCurrentPopulationSize(int generation) {
+        return populations.get(generation).size();
     }
 
     public List<List<Integer>> getExamSchedule() {
@@ -140,6 +147,21 @@ public class AllInOne {
         this.nbModulesInCourse = nbModulesInCourse;
     }
 
+    public int getChancesOfMutation() {
+        return chancesOfMutation;
+    }
+
+    public void setChancesOfMutation(int chancesOfMutation) {
+        this.chancesOfMutation = chancesOfMutation;
+    }
+
+    public int getChancesOfCrossover() {
+        return chancesOfCrossover;
+    }
+
+    public void setChancesOfCrossover(int chancesOfCrossover) {
+        this.chancesOfCrossover = chancesOfCrossover;
+    }
 
     //methods and procedures
 
@@ -212,7 +234,7 @@ public class AllInOne {
 
 
     /**
-     * asks the user to register the number of generation, the population size, the number of students,
+     * asks the user to register the number of generation, the populations size, the number of students,
      * the number of total modules, and the number of modules in a course, checking integrity for each parameter and
      * asking confirmation. Then deduces the number of exam days.
      */
@@ -226,8 +248,8 @@ public class AllInOne {
             intInput = scanner.nextInt();
             setNbGenerations(intInput);
 
-            //population size
-            System.out.println("Enter the population size (number of randomly generated orderings)");
+            //populations size
+            System.out.println("Enter the populations size (number of randomly generated orderings)");
             intInput = scanner.nextInt();
             setPopSize(intInput);
 
@@ -311,18 +333,18 @@ public class AllInOne {
 
 
     /**
-     * Checks for atomicity of the last ordering in the population
-     * Checking only the last ordering is fine because the check is made for every ordering added to the population
-     * so every ordering in the population is checked (besides the first, but the first is alone so the check would
+     * Checks for atomicity of the last ordering in the populations
+     * Checking only the last ordering is fine because the check is made for every ordering added to the populations
+     * so every ordering in the populations is checked (besides the first, but the first is alone so the check would
      * be pointless)
-     * @return true if the last ordering is different from any other in the population
+     * @return true if the last ordering is different from any other in the populations
      */
     private boolean areOrderingsDiff() { //
-        if (getCurrentPopulationSize() == 1) {
+        if (getCurrentPopulationSize(getGeneration()) == 1) {
             return true;
         }
-        for (int i = 0; i != getCurrentPopulationSize() - 1; ++i) {
-            if (getOrderingFromPopulation(i) == getOrderingFromPopulation(getCurrentPopulationSize() -1)) {
+        for (int i = 0; i != getCurrentPopulationSize(getGeneration()) - 1; ++i) {
+            if (getOrderingFromPopulation(getGeneration(), i) == getOrderingFromPopulation(getGeneration(), getCurrentPopulationSize(getGeneration()) -1)) {
                 return false;
             }
         }
@@ -331,30 +353,30 @@ public class AllInOne {
 
 
     /**
-     * fill the stored attribute population (its size being already defined) with randomly generated orderings.
+     * fill the stored attribute populations (its size being already defined) with randomly generated orderings.
      * For each ordering added, it checks if it is different from every other. If not so, removes it, and creates
      * another randomly generated ordering, and tests it again, until a different one is created.
      */
     public void generatePopulation () {
         for (int i = 0; i !=getPopSize(); ++i) {
-            addToPopulation(generateOrdering());
+            addToPopulation(getGeneration(), generateOrdering());
             while (! areOrderingsDiff()) { //assure different orderings
-                removeFromPopulation(getCurrentPopulationSize() - 1);
-                addToPopulation(generateOrdering());
+                removeFromPopulation(getGeneration(), getCurrentPopulationSize(getGeneration()) - 1);
+                addToPopulation(getGeneration(), generateOrdering());
             }
         }
     } //generatePopulation()
 
 
     /**
-     * Calculates the fitness cost of each ordering in the population, and stores them in the PopulationFitnessCost
+     * Calculates the fitness cost of each ordering in the populations, and stores them in the PopulationFitnessCost
      * list, that shares the same index than the Population list
      */
     public void generatePopulationFitnessCost () {
         System.out.println("Fitness cost calculating...");
 
         for (int i = 0; i != getPopSize(); ++i) {
-            addToPopulationFitnessCost(calculateFitnessCost(getOrderingFromPopulation(i)));
+            addToPopulationFitnessCost(getGeneration(), calculateFitnessCost(getOrderingFromPopulation(getGeneration(), i)));
         }
     } //generatePopulationFitnessCost()
 
@@ -456,20 +478,20 @@ public class AllInOne {
         builder.append(newline);
 
         //write orderings
-        for (int i = 0; i != getCurrentPopulationSize(); ++i) {
+        for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) {
             builder.append("Order ");
             builder.append(i + 1);
             builder.append(" (Cost ");
-            builder.append(getFitnessCost(i));
+            builder.append(getFitnessCost(getGeneration(), i));
             builder.append("):");
             builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(getGeneration(), i)) {
                 builder.append("M");
                 builder.append(pairOfModule.get(0));
                 builder.append(" ");
             }
             builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(getGeneration(), i)) {
                 builder.append("M");
                 builder.append(pairOfModule.get(1));
                 builder.append(" ");
@@ -483,13 +505,34 @@ public class AllInOne {
 
 
     public void iterate () {
-        for (int i = 0; i != nbGenerations; ++i) {
-            //selection
-            //random
-            //reproduction
-            //mutation
-            //crossover
-        }
+        int randomNumber;
+        do {
+            iterateGeneration();
+            selection();
+            for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) {
+                randomNumber = randomWithRange(0, 100);
+                if (randomNumber <= getChancesOfMutation()) {
+                    mutation(getOrderingFromPopulation(getGeneration(), i));
+                } else if (randomNumber <= (getChancesOfMutation() + getChancesOfCrossover())) {
+                    crossover(getOrderingFromPopulation(getGeneration(), i), getOrderingFromPopulation(getGeneration(), i));
+                    ++i; //deals with 2 orderings at once
+                } //else repoduction so nothing happens
+            }
+        } while (getGeneration() != getNbGenerations());
+    }
+
+    public void selection() {
+        //sort population
+        //divide in 3 equal sub groups
+        //replace the third sub group by the first
+    }
+
+    public void mutation(List<List<Integer>> ordering) {
+        //swap randomly 2 modules
+    }
+
+    public void crossover(List<List<Integer>> ordering1, List<List<Integer>> ordering2) {
+        //crossover stuff
     }
 
     /**
@@ -498,7 +541,7 @@ public class AllInOne {
      * @param args we don't need that
      */
     public static void main(String[] args) {
-        AllInOne main = new AllInOne();
+        AllInOne2 main = new AllInOne2();
         main.setParameters();
         main.generatePopulation();
         main.generatePopulationFitnessCost();
