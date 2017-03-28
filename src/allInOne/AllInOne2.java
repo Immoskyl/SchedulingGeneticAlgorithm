@@ -41,17 +41,33 @@ public class AllInOne2 {
 
 
     //getter and setter methods
+    //
+    //overload of methods with the generation parameter to facilitate the comprehension of the business logic part
+    //every method without the generation attribute assume the requested population is the last generation one
 
     public void overwriteOrderingInPopulation(int index, List<List<Integer>> ordering, int generation) {
         populations.get(generation).set(index, ordering);
+    }
+
+
+    public void overwriteOrderingInPopulation(int index, List<List<Integer>> ordering) {
+        overwriteOrderingInPopulation(index, ordering, getGeneration());
     }
 
     public void overwritePopulationFitnessCost(int index, int fitness, int generation) {
         populationFitnessCosts.get(generation).set(index, fitness);
     }
 
+    public void overwritePopulationFitnessCost(int index, int fitness) {
+        overwritePopulationFitnessCost(index, fitness, getGeneration());
+    }
+
     public void addToPopulationFitnessCost (int generation, int fitnessCost) {
         this.populationFitnessCosts.get(generation).add(fitnessCost);
+    }
+
+    public void addToPopulationFitnessCost (int fitnessCost) {
+        addToPopulationFitnessCost(getGeneration(), fitnessCost);
     }
 
     public int getCrossoverOrderingIndex() {
@@ -66,16 +82,32 @@ public class AllInOne2 {
         this.populationFitnessCosts.get(generation).remove(index);
     }
 
+    public void removeFromPopulationFitnessCost (int index) {
+        removeFromPopulationFitnessCost(getGeneration(), index);
+    }
+
     public int getFitnessCost (int generation, int index) {
         return populationFitnessCosts.get(generation).get(index);
+    }
+
+    public int getFitnessCost (int index) {
+        return getFitnessCost(getGeneration(), index);
     }
 
     public List<List<Integer>> getOrderingFromPopulation(int generation, int index) {
         return populations.get(generation).get(index);
     }
 
+    public List<List<Integer>> getOrderingFromPopulation(int index) {
+        return getOrderingFromPopulation(getGeneration(), index);
+    }
+
     public void addToPopulation (int generation, List<List<Integer>> ordering) {
         this.populations.get(generation).add(ordering);
+    }
+
+    public void addToPopulation (List<List<Integer>> ordering) {
+        addToPopulation(getGeneration(), ordering);
     }
 
     public void iterateGeneration() {
@@ -83,19 +115,31 @@ public class AllInOne2 {
     }
 
     public int getGeneration() {
-        return populations.size();
+        return (populations.size() - 1);
     }
 
     public void removeFromPopulation (int generation, List<List<Integer>> ordering) {
         this.populations.get(generation).remove(ordering);
     }
 
+    public void removeFromPopulation (List<List<Integer>> ordering) {
+        removeFromPopulation(getGeneration(), ordering);
+    }
+
     public void removeFromPopulation (int generation, int index) {
         this.populations.get(generation).remove(index);
     }
 
+    public void removeFromPopulation (int index) {
+        removeFromPopulation(getGeneration(), index);
+    }
+
     public int getCurrentPopulationSize(int generation) {
         return populations.get(generation).size();
+    }
+
+    public int getCurrentPopulationSize() {
+        return getCurrentPopulationSize(getGeneration());
     }
 
     public List<List<Integer>> getCrossoverOrdering() {
@@ -184,16 +228,33 @@ public class AllInOne2 {
         return populations.get(generation);
     }
 
+    public List<List<List<Integer>>> getPopulation() {
+        return getPopulation(getGeneration());
+    }
+
     public void setPopulation(int generation, List<List<List<Integer>>> population) {
         this.populations.set(generation, population);
+    }
+
+    public void setPopulation(List<List<List<Integer>>> population) {
+        setPopulation(getGeneration(), population);
     }
 
     public List<Integer> getPopulationFitnessCost(int generation) {
         return populationFitnessCosts.get(generation);
     }
 
+
+    public List<Integer> getPopulationFitnessCost() {
+        return getPopulationFitnessCost(getGeneration());
+    }
+
     public void setPopulationFitnessCost(int generation, List<Integer> populationFitnessCosts) {
         this.populationFitnessCosts.set(generation, populationFitnessCosts);
+    }
+
+    public void setPopulationFitnessCost(List<Integer> populationFitnessCosts) {
+        setPopulationFitnessCost(getGeneration(), populationFitnessCosts);
     }
 
     //methods and procedures
@@ -202,7 +263,7 @@ public class AllInOne2 {
      * returns a random number including max and excluding min
      * @param min int minimum
      * @param max int maximum
-     * @return
+     * @return randomNumber
      */
     private int randomWithRange(int min, int max)
     {
@@ -212,8 +273,8 @@ public class AllInOne2 {
 
 
     private void sortPopulation () {
-        List<List<List<Integer>>> pop = getPopulation(getGeneration());
-        List<Integer> fitness = getPopulationFitnessCost(getGeneration());
+        List<List<List<Integer>>> pop = getPopulation();
+        List<Integer> fitness = getPopulationFitnessCost();
 
 
         //bubble sort implementation
@@ -235,8 +296,8 @@ public class AllInOne2 {
             }
         }
 
-        setPopulation(getGeneration(), pop);
-        setPopulationFitnessCost(getGeneration(), fitness);
+        setPopulation(pop);
+        setPopulationFitnessCost(fitness);
     }
 
 
@@ -255,7 +316,7 @@ public class AllInOne2 {
         switch (scanner.nextInt()) {
             default:
                 System.out.println("Is typing 1 or 2 that difficult?");
-                System.out.println("Considering your issues concerning keyboard inputs, we will limit them as much as possible, and for now use the random attribution.");
+                System.out.println("Considering your issues concerning keyboard inputs, we will limit them as much as possible, and for this time use the random attribution.");
             case 1: //random attribution
                 for (int i = 0; i != getNbStudents(); ++i) {
                     int chosenModule;
@@ -402,11 +463,11 @@ public class AllInOne2 {
      * @return true if the last ordering is different from any other in the populations
      */
     private boolean areOrderingsDiff() { //
-        if (getCurrentPopulationSize(getGeneration()) == 1) {
+        if (getCurrentPopulationSize() == 1) {
             return true;
         }
-        for (int i = 0; i != getCurrentPopulationSize(getGeneration()) - 1; ++i) {
-            if (getOrderingFromPopulation(getGeneration(), i) == getOrderingFromPopulation(getGeneration(), getCurrentPopulationSize(getGeneration()) -1)) {
+        for (int i = 0; i != getCurrentPopulationSize() - 1; ++i) {
+            if (getOrderingFromPopulation(i) == getOrderingFromPopulation(getCurrentPopulationSize())) {
                 return false;
             }
         }
@@ -421,10 +482,10 @@ public class AllInOne2 {
      */
     public void generatePopulation () {
         for (int i = 0; i !=getPopSize(); ++i) {
-            addToPopulation(getGeneration(), generateOrdering());
+            addToPopulation(generateOrdering());
             while (! areOrderingsDiff()) { //assure different orderings
-                removeFromPopulation(getGeneration(), getCurrentPopulationSize(getGeneration()) - 1);
-                addToPopulation(getGeneration(), generateOrdering());
+                removeFromPopulation(getCurrentPopulationSize());
+                addToPopulation(generateOrdering());
             }
         }
     } //generatePopulation()
@@ -438,7 +499,7 @@ public class AllInOne2 {
         System.out.println("Fitness cost calculating...");
 
         for (int i = 0; i != getPopSize(); ++i) {
-            addToPopulationFitnessCost(getGeneration(), calculateFitnessCost(getOrderingFromPopulation(getGeneration(), i)));
+            addToPopulationFitnessCost(calculateFitnessCost(getOrderingFromPopulation(i)));
         }
     } //generatePopulationFitnessCost()
 
@@ -540,20 +601,20 @@ public class AllInOne2 {
         builder.append(newline);
 
         //write orderings
-        for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) {
+        for (int i = 0; i != getCurrentPopulationSize(); ++i) {
             builder.append("Order ");
             builder.append(i + 1);
             builder.append(" (Cost ");
-            builder.append(getFitnessCost(getGeneration(), i));
+            builder.append(getFitnessCost(i));
             builder.append("):");
             builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(getGeneration(), i)) {
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
                 builder.append("M");
                 builder.append(pairOfModule.get(0));
                 builder.append(" ");
             }
             builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(getGeneration(), i)) {
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
                 builder.append("M");
                 builder.append(pairOfModule.get(1));
                 builder.append(" ");
@@ -572,13 +633,13 @@ public class AllInOne2 {
             selection();
 
             //modify orderings
-            for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) {
+            for (int i = 0; i != getCurrentPopulationSize(); ++i) {
                 selectGATechniqueOnOrdering(i);
             }
 
             //calculate new fitness costs
-            for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) { //double loop to consider all the crossover orderings
-                overwritePopulationFitnessCost(i, calculateFitnessCost(getOrderingFromPopulation(getGeneration(), i)), getGeneration()); //calculate new fitness cost
+            for (int i = 0; i != getCurrentPopulationSize(); ++i) { //double loop to consider all the crossover orderings
+                overwritePopulationFitnessCost(i, calculateFitnessCost(getOrderingFromPopulation(i))); //calculate new fitness cost
             }
         } while (getGeneration() != getNbGenerations());
     }
@@ -587,13 +648,13 @@ public class AllInOne2 {
         int randomNumber;
         randomNumber = randomWithRange(0, 100);
         if (randomNumber <= getChancesOfMutation()) { //mutation
-            mutation(getOrderingFromPopulation(getGeneration(), i), i);
+            mutation(getOrderingFromPopulation(i), i);
         } else if (randomNumber <= (getChancesOfMutation() + getChancesOfCrossover())) { //crossover
             if (getCrossoverOrdering() != null) {
-                crossover(getOrderingFromPopulation(getGeneration(), i), i , getCrossoverOrdering(), getCrossoverOrderingIndex());
+                crossover(getOrderingFromPopulation(i), i , getCrossoverOrdering(), getCrossoverOrderingIndex());
                 setCrossoverOrdering(null);
-            } else if (i < (getCurrentPopulationSize(getGeneration()) - 1)) { //needs at least 2 orderings
-                setCrossoverOrdering(getOrderingFromPopulation(getGeneration(), i));
+            } else if (i < (getCurrentPopulationSize())) { //needs at least 2 orderings
+                setCrossoverOrdering(getOrderingFromPopulation(i));
                 setCrossoverOrderingIndex(i);
             } else {
                 selectGATechniqueOnOrdering(i); //reroll for the ordering
@@ -604,33 +665,85 @@ public class AllInOne2 {
     public void selection() {
         sortPopulation();
 
+       //               /!\ not sure about the corectness of the algo
         //replace the third sub group by the first one
-        int part = getCurrentPopulationSize(getGeneration()) / 3; //can "miss" possibly 2 orderings at the beginning of the array
-        for (int i = getCurrentPopulationSize(getGeneration()); i != part * 2; --i) { //divide in 3 equal sub groups
-            overwriteOrderingInPopulation(i, getOrderingFromPopulation(getGeneration(), i - (part * 2)), getGeneration());
-            overwritePopulationFitnessCost(i, getFitnessCost(getGeneration(), i - (part * 2)), getGeneration());
+        int part = getCurrentPopulationSize() / 3; //can "add" possibly 2 orderings to the copying due to the division rest
+        for (int i = getCurrentPopulationSize(); i != part * 2; --i) { //divide in 3 equal sub groups
+            overwriteOrderingInPopulation(i, getOrderingFromPopulation(i - (part * 2)));
+            overwritePopulationFitnessCost(i, getFitnessCost(i - (part * 2)));
         }
     }
 
     public void mutation(List<List<Integer>> ordering, int index) {
-        int rand1= randomWithRange(0, nbModules);
+        int rand1= randomWithRange(0, getNbModules());
         int rand2;
         do {
-            rand2 = randomWithRange(0, nbModules);
+            rand2 = randomWithRange(0, getNbModules());
         } while (rand1 == rand2);
-        List<Integer> temp = ordering.get(rand1);
-        ordering.set(rand1, ordering.get(rand2));
-        ordering.set(rand2, temp);
-        overwriteOrderingInPopulation(index, ordering, getGeneration());
+
+        //col = rand / 2 and row = rand % 2
+        int temp = ordering.get(rand1 / 2).get(rand1 % 2);
+        ordering.get(rand1 / 2).set(rand1 % 2, ordering.get(rand2 / 2).get(rand2 % 2));
+        ordering.get(rand2 / 2).set(rand2 % 2, temp);
+        overwriteOrderingInPopulation(index, ordering);
         //swap randomly 2 modules
     }
 
     public void crossover(List<List<Integer>> ordering1, int index1, List<List<Integer>> ordering2, int index2) {
         //crossover stuff
+        int cutPoint = randomWithRange(1, getNbModules() - 1); //must at least cut one module
+        List<List<Integer>> temp = ordering1;
+        for (int i = 0; i != cutPoint; ++i) {
+            ordering1.get(cutPoint / 2).set(cutPoint % 2, ordering2.get(cutPoint / 2).get(cutPoint % 2));
+            ordering2.get(cutPoint / 2).set(cutPoint % 2, temp.get(cutPoint / 2).get(cutPoint % 2));
+        }
 
+        //checking for duplicates
 
-        overwriteOrderingInPopulation(index1, ordering1, getGeneration());
-        overwriteOrderingInPopulation(index2, ordering2, getGeneration());
+        int moduleCheck1;
+        int moduleCheck2;
+        List<Integer> test1 = new ArrayList<>();
+        List<Integer> test2 = new ArrayList<>();
+        List<Integer> duplicate1 = new ArrayList<>();
+        List<Integer> duplicate2 = new ArrayList<>();
+        int crossedPointer1to2 = 0;
+        int crossedPointer2to1 = 0;
+
+        for (int i = 0; i != getNbModules(); ++i) {
+            //ordering1
+            moduleCheck1 = ordering1.get(i / 2).get(i % 2);
+            if(! test1.contains(moduleCheck1)) {
+                test1.add(moduleCheck1);
+            } else { duplicate1.add(moduleCheck1);}
+
+            //ordering2
+            moduleCheck2 = ordering2.get(i / 2).get(i % 2);
+            if(! test2.contains(moduleCheck2)) {
+                test2.add(moduleCheck2);
+            } else {
+                duplicate2.add(moduleCheck2);
+            }
+        }
+
+        //replacing duplicated values by lost values
+
+        for (int i = 0; i != getNbModules(); ++i) {
+            for (int j = 0; j != duplicate1.size(); ++j) {
+               if (ordering1.get(i / 2).get(i % 2).equals(duplicate1.get(j))) {
+                   ordering1.get(i / 2).set(i % 2, duplicate2.get(crossedPointer1to2));
+                   ++crossedPointer1to2;
+               }
+            }
+            for (int j = 0; j != duplicate2.size(); ++j) {
+                if (ordering1.get(i / 2).get(i % 2).equals(duplicate2.get(j))) {
+                    ordering2.get(i / 2).set(i % 2, duplicate1.get(crossedPointer2to1));
+                    ++crossedPointer2to1;
+                }
+            }
+        }
+
+        overwriteOrderingInPopulation(index1, ordering1);
+        overwriteOrderingInPopulation(index2, ordering2);
     }
 
     /**
