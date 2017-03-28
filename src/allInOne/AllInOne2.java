@@ -33,7 +33,8 @@ public class AllInOne2 {
     private int nbModulesInCourse = 0;
 
     private List<List<Integer>> studentsModules;
-    private List<List<Integer>> examSchedule;
+    private List<List<Integer>> crossoverOrdering = null;
+    private int crossoverOrderingIndex = 0;
 
     private List<List<List<List<Integer>>>> populations = new ArrayList<>();
     private List<List<Integer>> populationFitnessCosts = new ArrayList<>();
@@ -41,12 +42,28 @@ public class AllInOne2 {
 
     //getter and setter methods
 
+    public void overwriteOrderingInPopulation(int index, List<List<Integer>> ordering, int generation) {
+        populations.get(generation).set(index, ordering);
+    }
+
+    public void overwritePopulationFitnessCost(int index, int fitness, int generation) {
+        populationFitnessCosts.get(generation).set(index, fitness);
+    }
+
     public void addToPopulationFitnessCost (int generation, int fitnessCost) {
         this.populationFitnessCosts.get(generation).add(fitnessCost);
     }
 
-    public void removeFromPopulationFitnessCost (int index) {
-        this.populationFitnessCosts.remove(index);
+    public int getCrossoverOrderingIndex() {
+        return crossoverOrderingIndex;
+    }
+
+    public void setCrossoverOrderingIndex(int crossoverOrderingIndex) {
+        this.crossoverOrderingIndex = crossoverOrderingIndex;
+    }
+
+    public void removeFromPopulationFitnessCost (int generation, int index) {
+        this.populationFitnessCosts.get(generation).remove(index);
     }
 
     public int getFitnessCost (int generation, int index) {
@@ -81,12 +98,12 @@ public class AllInOne2 {
         return populations.get(generation).size();
     }
 
-    public List<List<Integer>> getExamSchedule() {
-        return examSchedule;
+    public List<List<Integer>> getCrossoverOrdering() {
+        return crossoverOrdering;
     }
 
-    public void setExamSchedule(List<List<Integer>> examSchedule) {
-        this.examSchedule = examSchedule;
+    public void setCrossoverOrdering(List<List<Integer>> crossoverOrdering) {
+        this.crossoverOrdering = crossoverOrdering;
     }
 
     public List<List<Integer>> getStudentsModules() {
@@ -163,6 +180,22 @@ public class AllInOne2 {
         this.chancesOfCrossover = chancesOfCrossover;
     }
 
+    public List<List<List<Integer>>> getPopulation(int generation) {
+        return populations.get(generation);
+    }
+
+    public void setPopulation(int generation, List<List<List<Integer>>> population) {
+        this.populations.set(generation, population);
+    }
+
+    public List<Integer> getPopulationFitnessCost(int generation) {
+        return populationFitnessCosts.get(generation);
+    }
+
+    public void setPopulationFitnessCost(int generation, List<Integer> populationFitnessCosts) {
+        this.populationFitnessCosts.set(generation, populationFitnessCosts);
+    }
+
     //methods and procedures
 
     /**
@@ -176,6 +209,35 @@ public class AllInOne2 {
         int range = (max - min) + 1;
         return (int) (Math.random() * range) + min;
     } //randomWithRange
+
+
+    private void sortPopulation () {
+        List<List<List<Integer>>> pop = getPopulation(getGeneration());
+        List<Integer> fitness = getPopulationFitnessCost(getGeneration());
+
+
+        //bubble sort implementation
+        for (int i = (fitness.size() - 1); i >= 0; i--)
+        {
+            for (int j = 1; j <= i; j++) //quadratic time but it does the job
+            {
+                if (fitness.get(j - 1) > fitness.get(j)) {
+                    //fitness
+                    int fitnessTemp = fitness.get(j - 1);
+                    fitness.set(j - 1, fitness.get(j));
+                    fitness.set(j, fitnessTemp);
+
+                    //population
+                    List<List<Integer>> popTemp = pop.get(j - 1);
+                    pop.set(j - 1, pop.get(j));
+                    pop.set(j, popTemp);
+                }
+            }
+        }
+
+        setPopulation(getGeneration(), pop);
+        setPopulationFitnessCost(getGeneration(), fitness);
+    }
 
 
     /**
@@ -505,34 +567,70 @@ public class AllInOne2 {
 
 
     public void iterate () {
-        int randomNumber;
         do {
             iterateGeneration();
             selection();
+
+            //modify orderings
             for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) {
-                randomNumber = randomWithRange(0, 100);
-                if (randomNumber <= getChancesOfMutation()) {
-                    mutation(getOrderingFromPopulation(getGeneration(), i));
-                } else if (randomNumber <= (getChancesOfMutation() + getChancesOfCrossover())) {
-                    crossover(getOrderingFromPopulation(getGeneration(), i), getOrderingFromPopulation(getGeneration(), i));
-                    ++i; //deals with 2 orderings at once
-                } //else repoduction so nothing happens
+                selectGATechniqueOnOrdering(i);
+            }
+
+            //calculate new fitness costs
+            for (int i = 0; i != getCurrentPopulationSize(getGeneration()); ++i) { //double loop to consider all the crossover orderings
+                overwritePopulationFitnessCost(i, calculateFitnessCost(getOrderingFromPopulation(getGeneration(), i)), getGeneration()); //calculate new fitness cost
             }
         } while (getGeneration() != getNbGenerations());
     }
 
-    public void selection() {
-        //sort population
-        //divide in 3 equal sub groups
-        //replace the third sub group by the first
+    public void selectGATechniqueOnOrdering(int i) {
+        int randomNumber;
+        randomNumber = randomWithRange(0, 100);
+        if (randomNumber <= getChancesOfMutation()) { //mutation
+            mutation(getOrderingFromPopulation(getGeneration(), i), i);
+        } else if (randomNumber <= (getChancesOfMutation() + getChancesOfCrossover())) { //crossover
+            if (getCrossoverOrdering() != null) {
+                crossover(getOrderingFromPopulation(getGeneration(), i), i , getCrossoverOrdering(), getCrossoverOrderingIndex());
+                setCrossoverOrdering(null);
+            } else if (i < (getCurrentPopulationSize(getGeneration()) - 1)) { //needs at least 2 orderings
+                setCrossoverOrdering(getOrderingFromPopulation(getGeneration(), i));
+                setCrossoverOrderingIndex(i);
+            } else {
+                selectGATechniqueOnOrdering(i); //reroll for the ordering
+            }
+        } //else reproduction so nothing happens
     }
 
-    public void mutation(List<List<Integer>> ordering) {
+    public void selection() {
+        sortPopulation();
+
+        //replace the third sub group by the first one
+        int part = getCurrentPopulationSize(getGeneration()) / 3; //can "miss" possibly 2 orderings at the beginning of the array
+        for (int i = getCurrentPopulationSize(getGeneration()); i != part * 2; --i) { //divide in 3 equal sub groups
+            overwriteOrderingInPopulation(i, getOrderingFromPopulation(getGeneration(), i - (part * 2)), getGeneration());
+            overwritePopulationFitnessCost(i, getFitnessCost(getGeneration(), i - (part * 2)), getGeneration());
+        }
+    }
+
+    public void mutation(List<List<Integer>> ordering, int index) {
+        int rand1= randomWithRange(0, nbModules);
+        int rand2;
+        do {
+            rand2 = randomWithRange(0, nbModules);
+        } while (rand1 == rand2);
+        List<Integer> temp = ordering.get(rand1);
+        ordering.set(rand1, ordering.get(rand2));
+        ordering.set(rand2, temp);
+        overwriteOrderingInPopulation(index, ordering, getGeneration());
         //swap randomly 2 modules
     }
 
-    public void crossover(List<List<Integer>> ordering1, List<List<Integer>> ordering2) {
+    public void crossover(List<List<Integer>> ordering1, int index1, List<List<Integer>> ordering2, int index2) {
         //crossover stuff
+
+
+        overwriteOrderingInPopulation(index1, ordering1, getGeneration());
+        overwriteOrderingInPopulation(index2, ordering2, getGeneration());
     }
 
     /**
