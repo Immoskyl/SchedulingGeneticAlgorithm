@@ -21,6 +21,10 @@ import java.util.Scanner;
 
 public class AllInOne2 {
 
+    /*-****************************************************************************************************************/
+    /*                                          class related                                                         */
+    /*-****************************************************************************************************************/
+
     //attributes
 
     private int chancesOfMutation = 0;
@@ -110,11 +114,20 @@ public class AllInOne2 {
         addToPopulation(getGeneration(), ordering);
     }
 
+    public void initializePop(List<List<List<Integer>>> firstGeneration) {
+        populations.add(firstGeneration);
+    }
+
+    public void initializeFitnessCost(List<Integer> firstGeneration) {
+        populationFitnessCosts.add(firstGeneration);
+    }
+
     public void iterateGeneration() {
         populations.add(populations.get(getGeneration())); //verrrrrrrrrrrrry cheesy line (as it is base on populations size it increments)
     }
 
     public int getGeneration() {
+        System.out.println("getGeneration: gen" + (populations.size() - 1) );
         return (populations.size() - 1);
     }
 
@@ -259,47 +272,10 @@ public class AllInOne2 {
 
     //methods and procedures
 
-    /**
-     * returns a random number including max and excluding min
-     * @param min int minimum
-     * @param max int maximum
-     * @return randomNumber
-     */
-    private int randomWithRange(int min, int max)
-    {
-        int range = (max - min) + 1;
-        return (int) (Math.random() * range) + min;
-    } //randomWithRange
 
-
-    private void sortPopulation () {
-        List<List<List<Integer>>> pop = getPopulation();
-        List<Integer> fitness = getPopulationFitnessCost();
-
-
-        //bubble sort implementation
-        for (int i = (fitness.size() - 1); i >= 0; i--)
-        {
-            for (int j = 1; j <= i; j++) //quadratic time but it does the job
-            {
-                if (fitness.get(j - 1) > fitness.get(j)) {
-                    //fitness
-                    int fitnessTemp = fitness.get(j - 1);
-                    fitness.set(j - 1, fitness.get(j));
-                    fitness.set(j, fitnessTemp);
-
-                    //population
-                    List<List<Integer>> popTemp = pop.get(j - 1);
-                    pop.set(j - 1, pop.get(j));
-                    pop.set(j, popTemp);
-                }
-            }
-        }
-
-        setPopulation(pop);
-        setPopulationFitnessCost(fitness);
-    }
-
+    /*-****************************************************************************************************************/
+    /*                                          initialization                                                        */
+    /*-****************************************************************************************************************/
 
     /**
      * generates, rather randomly or specified, the studentModules,
@@ -399,6 +375,34 @@ public class AllInOne2 {
             }
             setNbModulesInCourse(intInput);
 
+            //percentage of mutation
+            System.out.println("Enter the probability over 100 of mutation of the genetic algorithm");
+            while (true) {
+                intInput = scanner.nextInt();
+                if (intInput > 100) {
+                    System.out.println("The probability must not be greater than 100 (100 / 100)");
+                    System.out.println("Type again");
+                } else {
+                    break;
+                }
+            }
+            setChancesOfMutation(intInput);
+
+            //percentage of crossover
+            System.out.println("Enter the probability over 100 of crossover of the genetic algorithm");
+            while (true) {
+                intInput = scanner.nextInt();
+                if (intInput > 100 - getChancesOfMutation()) {
+                    System.out.println("The probability must not be greater than " + (100 - getChancesOfMutation()) + " (probability of crossover plus mutation / 100)");
+                    System.out.println("Type again");
+                } else {
+                    break;
+                }
+            }
+            setChancesOfCrossover(intInput);
+
+            System.out.println("the probability of Reproduction is then " + (100 - (getChancesOfCrossover() + getChancesOfMutation())) + " / 100");
+
             //confirmation
             System.out.println("Are you happy with these values? (y/n)");
             strInput = scanner.nextLine(); //otherwise the required input is somehow skipped...
@@ -454,7 +458,6 @@ public class AllInOne2 {
         studentsModulesArrayCreation();
     } //setParameters()
 
-
     /**
      * Checks for atomicity of the last ordering in the populations
      * Checking only the last ordering is fine because the check is made for every ordering added to the populations
@@ -467,7 +470,7 @@ public class AllInOne2 {
             return true;
         }
         for (int i = 0; i != getCurrentPopulationSize() - 1; ++i) {
-            if (getOrderingFromPopulation(i) == getOrderingFromPopulation(getCurrentPopulationSize())) {
+            if (getOrderingFromPopulation(i) == getOrderingFromPopulation(getCurrentPopulationSize() - 1)) {
                 return false;
             }
         }
@@ -480,7 +483,9 @@ public class AllInOne2 {
      * For each ordering added, it checks if it is different from every other. If not so, removes it, and creates
      * another randomly generated ordering, and tests it again, until a different one is created.
      */
-    public void generatePopulation () {
+    public void generateInitialPopulation() {
+        List<List<List<Integer>>> firstGen = new ArrayList<>();
+        initializePop(firstGen);
         for (int i = 0; i !=getPopSize(); ++i) {
             addToPopulation(generateOrdering());
             while (! areOrderingsDiff()) { //assure different orderings
@@ -488,20 +493,68 @@ public class AllInOne2 {
                 addToPopulation(generateOrdering());
             }
         }
-    } //generatePopulation()
+    } //generateInitialPopulation()
 
 
     /**
      * Calculates the fitness cost of each ordering in the populations, and stores them in the PopulationFitnessCost
      * list, that shares the same index than the Population list
      */
-    public void generatePopulationFitnessCost () {
+    public void generateInitialPopulationFitnessCost() {
         System.out.println("Fitness cost calculating...");
-
+        List<Integer> firstGen = new ArrayList<>();
+        initializeFitnessCost(firstGen);
         for (int i = 0; i != getPopSize(); ++i) {
-            addToPopulationFitnessCost(calculateFitnessCost(getOrderingFromPopulation(i)));
+            addToPopulationFitnessCost((calculateFitnessCost(getOrderingFromPopulation(i))));
         }
-    } //generatePopulationFitnessCost()
+    } //generateInitialPopulationFitnessCost()
+
+
+
+    /*-****************************************************************************************************************/
+    /*                                          business logic                                                        */
+    /*-****************************************************************************************************************/
+
+    /**
+     * returns a random number including max and excluding min
+     * @param min int minimum
+     * @param max int maximum
+     * @return randomNumber
+     */
+    private int randomWithRange(int min, int max)
+    {
+        int range = (max - min) + 1;
+        return (int) (Math.random() * range) + min;
+    } //randomWithRange
+
+
+    private void sortPopulation () {
+        List<List<List<Integer>>> pop = getPopulation();
+        List<Integer> fitness = getPopulationFitnessCost();
+
+
+        //bubble sort implementation
+        for (int i = (fitness.size() - 1); i >= 0; i--)
+        {
+            for (int j = 1; j <= i; j++) //quadratic time but it does the job
+            {
+                if (fitness.get(j - 1) > fitness.get(j)) {
+                    //fitness
+                    int fitnessTemp = fitness.get(j - 1);
+                    fitness.set(j - 1, fitness.get(j));
+                    fitness.set(j, fitnessTemp);
+
+                    //population
+                    List<List<Integer>> popTemp = pop.get(j - 1);
+                    pop.set(j - 1, pop.get(j));
+                    pop.set(j, popTemp);
+                }
+            }
+        }
+
+        setPopulation(pop);
+        setPopulationFitnessCost(fitness);
+    }
 
 
     /**
@@ -545,94 +598,20 @@ public class AllInOne2 {
     } //hasStudentExamOverlapping()
 
 
-    //write files
-
-    /**
-     * generic file writing procedure, handling i/o 0exceptions
-     * @param address String address of the file to write (creates it if it does not already exists)
-     * @param text String text to write in the file
-     */
-    private void writeToFile(String address, String text) {
-        BufferedWriter bw = null;
-        FileWriter fw = null;
-
-        try {
-            fw = new FileWriter(address);
-            bw = new BufferedWriter(fw);
-            bw.write(text);
-        } catch (IOException e) {
-            System.out.println("Sorry it seems impossible to write the file");
-        } finally {
-            try {
-                if (bw != null)
-                    bw.close();
-                if (fw != null)
-                    fw.close();
-            } catch (IOException ex) {
-                System.out.println("Sorry it seems impossible to write the file");
-            }
-        }
-    } //writeToFile()
-
-
-    /**
-     * writes the wanted output ofr the interim submission on the right file
-     */
-    public void writeResults() {
-        String address = "AI17.txt";
-        String newline = System.getProperty("line.separator");
-        StringBuilder builder = new StringBuilder();
-
-        System.out.println("Results writing...");
-
-        //write students schedules
-        for (int i = 0; i != getStudentsModules().size(); ++i) {
-            builder.append("Student ");
-            builder.append(i + 1);
-            builder.append(": ");
-            for (Integer module : getStudentsModules().get(i)) {
-                builder.append("M");
-                builder.append(module);
-                builder.append(" ");
-            }
-            builder.append(newline);
-        }
-
-        builder.append(newline);
-
-        //write orderings
-        for (int i = 0; i != getCurrentPopulationSize(); ++i) {
-            builder.append("Order ");
-            builder.append(i + 1);
-            builder.append(" (Cost ");
-            builder.append(getFitnessCost(i));
-            builder.append("):");
-            builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
-                builder.append("M");
-                builder.append(pairOfModule.get(0));
-                builder.append(" ");
-            }
-            builder.append(newline);
-            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
-                builder.append("M");
-                builder.append(pairOfModule.get(1));
-                builder.append(" ");
-            }
-            builder.append(newline);
-            builder.append(newline);
-        }
-
-        writeToFile(address, builder.toString());
-    } //writeResults()
-
+    /*-****************************************************************************************************************/
+    /*                                          iterate generations                                                   */
+    /*-****************************************************************************************************************/
 
     public void iterate () {
+        //temporary
+        int gen = 0;
+        System.out.println("iterate");
+        System.out.println("generation " + gen);
         do {
             iterateGeneration();
             selection();
 
-            //modify orderings
+            //modify orderings in the new generation
             for (int i = 0; i != getCurrentPopulationSize(); ++i) {
                 selectGATechniqueOnOrdering(i);
             }
@@ -641,6 +620,10 @@ public class AllInOne2 {
             for (int i = 0; i != getCurrentPopulationSize(); ++i) { //double loop to consider all the crossover orderings
                 overwritePopulationFitnessCost(i, calculateFitnessCost(getOrderingFromPopulation(i))); //calculate new fitness cost
             }
+
+            //temporary
+            ++gen;
+            writeResults("generation" + gen); //basic output
         } while (getGeneration() != getNbGenerations());
     }
 
@@ -746,6 +729,88 @@ public class AllInOne2 {
         overwriteOrderingInPopulation(index2, ordering2);
     }
 
+    /*-****************************************************************************************************************/
+    /*                                          output                                                                */
+    /*-****************************************************************************************************************/
+
+    /**
+     * generic file writing procedure, handling i/o 0exceptions
+     * @param address String address of the file to write (creates it if it does not already exists)
+     * @param text String text to write in the file
+     */
+    private void writeToFile(String address, String text) {
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+
+        try {
+            fw = new FileWriter(address);
+            bw = new BufferedWriter(fw);
+            bw.write(text);
+        } catch (IOException e) {
+            System.out.println("Sorry it seems impossible to write the file");
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+                if (fw != null)
+                    fw.close();
+            } catch (IOException ex) {
+                System.out.println("Sorry it seems impossible to write the file");
+            }
+        }
+    } //writeToFile()
+
+    /**
+     * writes the wanted output ofr the interim submission on the right file
+     */
+    public void writeResults(String address) {
+        String newline = System.getProperty("line.separator");
+        StringBuilder builder = new StringBuilder();
+
+        System.out.println("Results writing...");
+
+        //write students schedules
+        for (int i = 0; i != getStudentsModules().size(); ++i) {
+            builder.append("Student ");
+            builder.append(i + 1);
+            builder.append(": ");
+            for (Integer module : getStudentsModules().get(i)) {
+                builder.append("M");
+                builder.append(module);
+                builder.append(" ");
+            }
+            builder.append(newline);
+        }
+
+        builder.append(newline);
+
+        //write orderings
+        for (int i = 0; i != getCurrentPopulationSize(); ++i) {
+            builder.append("Order ");
+            builder.append(i + 1);
+            builder.append(" (Cost ");
+            builder.append(getFitnessCost(i));
+            builder.append("):");
+            builder.append(newline);
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
+                builder.append("M");
+                builder.append(pairOfModule.get(0));
+                builder.append(" ");
+            }
+            builder.append(newline);
+            for (List<Integer> pairOfModule : getOrderingFromPopulation(i)) {
+                builder.append("M");
+                builder.append(pairOfModule.get(1));
+                builder.append(" ");
+            }
+            builder.append(newline);
+            builder.append(newline);
+        }
+
+        writeToFile(address, builder.toString());
+    } //writeResults()
+
+
     /**
      * pretty straight forward main. Just read the methods' names adn it should be fine to understand what's going on
      * Everything else is detailed in the other functions, and the handout given for the project.
@@ -754,10 +819,10 @@ public class AllInOne2 {
     public static void main(String[] args) {
         AllInOne2 main = new AllInOne2();
         main.setParameters();
-        main.generatePopulation();
-        main.generatePopulationFitnessCost();
-        main.writeResults();
+        main.generateInitialPopulation();
+        main.generateInitialPopulationFitnessCost();
+        main.writeResults("AI17-base.txt");
         main.iterate();
-        main.writeResults(); //basic output
+        main.writeResults("AI17-final.txt"); //basic output
     } //psvm()
 }

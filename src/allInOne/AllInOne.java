@@ -343,7 +343,7 @@ public class AllInOne {
                 addToPopulation(generateOrdering());
             }
         }
-    } //generatePopulation()
+    } //generateInitialPopulation()
 
 
     /**
@@ -356,7 +356,7 @@ public class AllInOne {
         for (int i = 0; i != getPopSize(); ++i) {
             addToPopulationFitnessCost(calculateFitnessCost(getOrderingFromPopulation(i)));
         }
-    } //generatePopulationFitnessCost()
+    } //generateInitialPopulationFitnessCost()
 
 
     /**
