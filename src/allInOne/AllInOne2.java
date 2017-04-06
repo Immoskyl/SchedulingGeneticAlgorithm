@@ -124,7 +124,7 @@ public class AllInOne2 {
 
     public void iterateGeneration() {
         populations.add(populations.get(getGeneration())); //verrrrrrrrrrrrry cheesy line (as it is base on populations size it increments)
-        populationFitnessCosts.add(populationFitnessCosts.get(getGeneration() - 1)); //get egneration will return the size +1
+        populationFitnessCosts.add(populationFitnessCosts.get(getGeneration() - 1)); //getGeneration will return the size +1
     }
 
     public int getGeneration() {
@@ -501,7 +501,6 @@ public class AllInOne2 {
      * list, that shares the same index than the Population list
      */
     public void generateInitialPopulationFitnessCost() {
-        System.out.println("Fitness cost calculating...");
         List<Integer> firstGen = new ArrayList<>();
         initializeFitnessCost(firstGen);
         for (int i = 0; i != getPopSize(); ++i) {
@@ -612,10 +611,8 @@ public class AllInOne2 {
             selection();
 
             //modify orderings in the new generation
-            for (int i = 0; i != getCurrentPopulationSize(); ++i) {
-                System.out.println("on ordering " + i + " on " + getCurrentPopulationSize() + ":");
+            for (int i = 0; i != getCurrentPopulationSize(); ++i)
                 selectGATechniqueOnOrdering(i);
-            }
             if (getCrossoverOrdering() != null) { //security if a single ordering has been chosen for crossover
                 mutation(getCrossoverOrdering(), getCrossoverOrderingIndex());
             }
@@ -647,10 +644,11 @@ public class AllInOne2 {
                 selectGATechniqueOnOrdering(i); //reroll for the ordering
             }
         } //else reproduction so nothing happens
-        else {System.out.println("reproduction");}
     }
 
     public void selection() {
+
+        System.out.println("SELEEEEEEEEEEEEEEEEEEEEEEEEEEEEECTIONNNNNNNNNNNNNNNNNNNNNNN");
         sortPopulation();
 
        //               /!\ not sure about the corectness of the algo
@@ -664,7 +662,6 @@ public class AllInOne2 {
     }
 
     public void mutation(List<List<Integer>> ordering, int index) {
-        System.out.println("mutation");
         int rand1= randomWithRange(0, getNbModules() - 1);
         int rand2;
         do {
@@ -680,15 +677,7 @@ public class AllInOne2 {
     }
 
     public void crossover(List<List<Integer>> ordering1, int index1, List<List<Integer>> ordering2, int index2) {
-        System.out.println("crossover");
-
-        System.out.println("ordering1 before crossover" + ordering1);
-        System.out.println("ordering2 before crossover" + ordering2);
-
         int cutPoint = randomWithRange(1, getNbModules() - 2); //must at least cut one module
-
-        System.out.println("cutpoint " + cutPoint);
-
         List<Integer> temp = new ArrayList<>();
 
 
@@ -698,70 +687,7 @@ public class AllInOne2 {
             ordering2.get(i / 2).set(i % 2, temp.get(i));
         }
 
-        /*
-        old stuff
-
-
         //checking for duplicates
-
-
-        int moduleCheck;
-        List<Integer> test1 = new ArrayList<>();
-        List<Integer> test2 = new ArrayList<>();
-        List<Integer> duplicate1 = new ArrayList<>();
-        List<Integer> duplicate2 = new ArrayList<>();
-        int crossedPointer1to2 = 0;
-        int crossedPointer2to1 = 0;
-
-        for (int i = 0; i != getNbModules(); ++i) {
-            //ordering1
-            moduleCheck = ordering1.get(i / 2).get(i % 2);
-            if(! test1.contains(moduleCheck)) {
-                test1.add(moduleCheck);
-            } else { duplicate1.add(moduleCheck);}
-
-            //ordering2
-            moduleCheck = ordering2.get(i / 2).get(i % 2);
-            if(! test2.contains(moduleCheck)) {
-                test2.add(moduleCheck);
-            } else {
-                duplicate2.add(moduleCheck);
-            }
-        }
-
-        //replacing duplicated values by lost values
-
-        System.out.println("duplicate size:" + duplicate1.size() + " " + duplicate2.size());
-        System.out.println("duplicate1" + duplicate1);
-        System.out.println("duplicate1" + duplicate2);
-        System.out.println("ordering size:" + ordering1.size() + " " + ordering2.size());
-        System.out.println("ordering1" + ordering1);
-        System.out.println("ordering2" + ordering2);
-        System.out.println("nb of modules:" + getNbModules());
-        for (int i = 0; i != getNbModules(); ++i) {
-            for (int j = 0; j != duplicate1.size(); ++j) {
-               if (ordering1.get(i / 2).get(i % 2).equals(duplicate1.get(j))) {
-                   System.out.println("i == " + i);
-                   System.out.println("duplicate crossed pointer 1 to 2 " + crossedPointer1to2);
-                   ordering1.get(i / 2).set(i % 2, duplicate2.get(crossedPointer1to2));
-                   ++crossedPointer1to2;
-               }
-               if (ordering2.get(i / 2).get(i % 2).equals(duplicate2.get(j))) {
-                   System.out.println("i == " + i);
-                   System.out.println("duplicate crossed pointer 2 to 1 " + crossedPointer2to1);
-                   ordering2.get(i / 2).set(i % 2, duplicate1.get(crossedPointer2to1));
-                   ++crossedPointer2to1;
-               }
-            }
-        }
-
-         */
-
-        System.out.println("ordering1" + ordering1);
-        System.out.println("ordering2" + ordering2);
-
-        //checking for duplicates
-
 
         List<List<Integer>> test = new ArrayList<>();       //index 0 is for ordering1, 1 is for ordering2
         List<List<Integer>> duplicates = new ArrayList<>();
@@ -793,7 +719,6 @@ public class AllInOne2 {
 
         //replacing duplicated values by lost values
 
-
         Integer pos;
         Integer val;
         for (int i = 0; i != duplicates.get(0).size(); ++i) { //the duplicates have the same size
@@ -804,7 +729,7 @@ public class AllInOne2 {
             //ordering2
             pos = dupPos.get(1).get(i);
             val = duplicates.get(0).get(i);
-            ordering1.get(pos / 2).set(pos % 2, val);
+            ordering2.get(pos / 2).set(pos % 2, val);
         }
 
         overwriteOrderingInPopulation(index1, ordering1);
