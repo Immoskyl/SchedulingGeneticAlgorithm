@@ -479,7 +479,7 @@ public class AllInOne {
         }
 
         writeToFile(address, builder.toString());
-    } //writeResults()
+    } //writeBestResults()
 
 
     public void iterate () {

@@ -15,9 +15,7 @@ package allInOne; //this we are not allowed to deliver more than one class, I ca
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class AllInOne2 {
 
@@ -42,7 +40,10 @@ public class AllInOne2 {
 
     private List<List<List<List<Integer>>>> populations = new ArrayList<>();
     private List<List<Integer>> populationFitnessCosts = new ArrayList<>();
+    private String bestOutputPerGen;
 
+    private boolean printAllGens = false;
+    private boolean graphRep = false;
 
     //getter and setter methods
     //
@@ -270,6 +271,30 @@ public class AllInOne2 {
         setPopulationFitnessCost(getGeneration(), populationFitnessCosts);
     }
 
+    public String getBestOutputPerGen() {
+        return bestOutputPerGen;
+    }
+
+    public void setBestOutputPerGen(String bestOutputPerGen) {
+        this.bestOutputPerGen = bestOutputPerGen;
+    }
+
+    public boolean isPrintAllGens() {
+        return printAllGens;
+    }
+
+    public void setPrintAllGens(boolean printAllGens) {
+        this.printAllGens = printAllGens;
+    }
+
+    public boolean isGraphRep() {
+        return graphRep;
+    }
+
+    public void setGraphRep(boolean graphRep) {
+        this.graphRep = graphRep;
+    }
+
     //methods and procedures
 
 
@@ -408,7 +433,7 @@ public class AllInOne2 {
             strInput = scanner.nextLine(); //otherwise the required input is somehow skipped...
             strInput = scanner.nextLine(); //
             System.out.println(strInput);
-            if (strInput.equals("yes") || strInput.equals("y")) {
+            if (strInput.equals("yes") || strInput.equals("y") || strInput.equals("Y") || strInput.equals("YES")) {
                 break;
             }
         }
@@ -417,6 +442,24 @@ public class AllInOne2 {
         setNbExamDays(getNbModules()/2);
     } //basicParameterCreation()
 
+    public void setOptions() {
+        String strInput;
+        Scanner scanner = new Scanner(System.in);
+
+        //print of every generation
+        System.out.println("OPTIONAL: Do you want to keep track of details of every step? (y/n)");
+        System.out.println("(A file describing each ordering will be created for every generation)");
+        strInput = scanner.nextLine();
+        if (strInput.equals("yes") || strInput.equals("y") || strInput.equals("Y") || strInput.equals("YES"))
+            setPrintAllGens(true);
+
+        //print a simple ASCII graph
+        System.out.println("OPTIONAL: Do you want to print the result as a graph (y/n)");
+        System.out.println("(Very simple ASCII graph representation to help to visualize the effectiveness of the algorithm)");
+        strInput = scanner.nextLine();
+        if (strInput.equals("yes") || strInput.equals("y") || strInput.equals("Y") || strInput.equals("YES"))
+            setGraphRep(true);
+    }
 
     /**
      * generates a random ordering of an exam schedule, assuring that every module picked in the ordering is different
@@ -456,6 +499,7 @@ public class AllInOne2 {
     public void setParameters() {
         basicParametersCreation();
         studentsModulesArrayCreation();
+        setOptions();
     } //setParameters()
 
     /**
@@ -605,8 +649,6 @@ public class AllInOne2 {
         //temporary
         int gen = 0;
         do {
-            System.out.println("iterate");
-            System.out.println("generation " + gen);
             iterateGeneration();
             selection();
 
@@ -622,9 +664,28 @@ public class AllInOne2 {
                 overwritePopulationFitnessCost(i, calculateFitnessCost(getOrderingFromPopulation(i))); //calculate new fitness cost
             }
 
-            //temporary
+            //for keeping track of every step:
             ++gen;
-            writeResults("generation" + gen); //basic output
+
+            if (isPrintAllGens()) {
+                writeResults("gen" + gen);
+            }
+
+            Integer minFitCost = Collections.min(getPopulationFitnessCost());
+
+           //for a graph reprensentation of the results
+            if (isGraphRep()) {
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i != minFitCost; ++i) {
+                    sb.append(" ");
+                }
+                sb.append(minFitCost);
+                addToBestResults(sb.toString()); //return the best fitness cost of the generation
+            } else {
+                addToBestResults(minFitCost); //return the best fitness cost of the generation
+            }
+
         } while (getGeneration() != getNbGenerations());
     }
 
@@ -648,10 +709,8 @@ public class AllInOne2 {
 
     public void selection() {
 
-        System.out.println("SELEEEEEEEEEEEEEEEEEEEEEEEEEEEEECTIONNNNNNNNNNNNNNNNNNNNNNN");
         sortPopulation();
 
-       //               /!\ not sure about the corectness of the algo
         //replace the third sub group by the first one
         int part = getCurrentPopulationSize() / 3; //can "add" possibly 2 orderings to the copying due to the division rest
         for (int i = getCurrentPopulationSize() - 1; i < part * 2; --i) { //divide in 3 equal sub groups
@@ -767,10 +826,35 @@ public class AllInOne2 {
         }
     } //writeToFile()
 
+
+    public void addToBestResults (Integer fitnessCost) {
+        if (getBestOutputPerGen() == null) {
+            setBestOutputPerGen(fitnessCost.toString());
+        } else {
+            String newline = System.getProperty("line.separator");
+            StringBuilder builder = new StringBuilder(getBestOutputPerGen());
+            builder.append(newline);
+            builder.append(fitnessCost);
+            setBestOutputPerGen(builder.toString());
+        }
+    }
+
+    public void addToBestResults (String fitnessCost) {
+        if (getBestOutputPerGen() == null) {
+            setBestOutputPerGen(fitnessCost);
+        } else {
+            String newline = System.getProperty("line.separator");
+            StringBuilder builder = new StringBuilder(getBestOutputPerGen());
+            builder.append(newline);
+            builder.append(fitnessCost);
+            setBestOutputPerGen(builder.toString());
+        }
+    }
+
     /**
      * writes the wanted output ofr the interim submission on the right file
      */
-    public void writeResults(String address) {
+    public void writeBestResults(String address) {
         String newline = System.getProperty("line.separator");
         StringBuilder builder = new StringBuilder();
 
@@ -790,6 +874,33 @@ public class AllInOne2 {
         }
 
         builder.append(newline);
+
+        //write orderings
+
+        builder.append("Best fitness cost per generation:");
+        builder.append(newline);
+        builder.append(getBestOutputPerGen());
+
+
+        builder.append(newline);
+        builder.append(newline);
+        builder.append("The best ordering in the last generation is:");
+        builder.append(newline);
+        for (List<Integer> pairOfModule : getOrderingFromPopulation(Collections.min(getPopulationFitnessCost()))) {
+            builder.append("M");
+            builder.append(pairOfModule.get(1));
+            builder.append(" ");
+        }
+
+        writeToFile(address, builder.toString());
+    } //writeBestResults()
+
+    /**
+     * writes the wanted output ofr the interim submission on the right file
+     */
+    public void writeResults(String address) {
+        String newline = System.getProperty("line.separator");
+        StringBuilder builder = new StringBuilder();
 
         //write orderings
         for (int i = 0; i != getCurrentPopulationSize(); ++i) {
@@ -815,7 +926,7 @@ public class AllInOne2 {
         }
 
         writeToFile(address, builder.toString());
-    } //writeResults()
+    } //writeBestResults()
 
 
     /**
@@ -828,8 +939,7 @@ public class AllInOne2 {
         main.setParameters();
         main.generateInitialPopulation();
         main.generateInitialPopulationFitnessCost();
-        main.writeResults("AI17-base.txt");
         main.iterate();
-        main.writeResults("AI17-final.txt"); //basic output
+        main.writeBestResults("AI17-RomainRoux-FinalSubmission.txt"); //basic output
     } //psvm()
 }
