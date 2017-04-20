@@ -1,4 +1,4 @@
-package allInOne; //this we are not allowed to deliver more than one class, I called the package and the class
+package allInOne; //this we are not allowed to deliver more than one class, I called the package
                   //AllInOne, because everything should be separated, but anyway...
 
 /**
@@ -6,7 +6,7 @@ package allInOne; //this we are not allowed to deliver more than one class, I ca
  * University of Limerick
  *
  * Created by Romain ROUX
- * Last modified on 28/02/2017
+ * Last modified on 20/04/2017
  * my UL ID: 16083733
  *
  * I assure all work done throuhough this project is done all my myself.
@@ -51,7 +51,7 @@ public class AllInOne2 {
     //every method without the generation attribute assume the requested population is the last generation one
 
     public void overwriteOrderingInPopulation(int index, List<List<Integer>> ordering, int generation) {
-        populations.get(generation).set(index, orderingCopy(ordering)); //copy by value of ordering and all its content
+        populations.get(generation).set(index, copyOrdering(ordering)); //copy by value of ordering and all its content
     }
 
 
@@ -432,11 +432,19 @@ public class AllInOne2 {
                 break;
         }
 
-        //nb of exam days = nb of modules / 2
+        System.out.println("There are two exams per exam day, and one per module, so there will be " + getNbModules()/2 + " exam days");
         setNbExamDays(getNbModules()/2);
     } //basicParameterCreation()
 
-    public void setOptions() {
+    /**
+     * ask the user for the setting oof two optionnal outputs:
+     * -a set of files, each containing the states of the orderings of one generation
+     * -a graph representation of the best fitness cost per generation
+     * with the fitness cost on the abscissa and the generation on the ordinate
+     * Keep in mind the graph rep is really simple and just there to give the user a better idea of the efficiency
+     * of the algo. The results in this representation are still white-space parsable for further interpretation
+     */
+    private void setOptions() {
         String strInput;
         Scanner scanner = new Scanner(System.in);
 
@@ -453,7 +461,7 @@ public class AllInOne2 {
         strInput = scanner.nextLine();
         if (strInput.equals("yes") || strInput.equals("y") || strInput.equals("Y") || strInput.equals("YES"))
             setGraphRep(true);
-    }
+    } //setOptions()
 
     /**
      * generates a random ordering of an exam schedule, assuring that every module picked in the ordering is different
@@ -561,10 +569,13 @@ public class AllInOne2 {
     } //randomWithRange
 
 
+    /**
+     * sort the stored population by fitness cost from the lowest to the biggest.
+     * The algorithm used is bubble sort
+     */
     private void sortPopulation () {
         List<List<List<Integer>>> pop = getPopulation();
         List<Integer> fitness = getPopulationFitnessCost();
-
 
         //bubble sort implementation
         for (int i = (fitness.size() - 1); i >= 0; i--)
@@ -587,7 +598,7 @@ public class AllInOne2 {
 
         setPopulation(pop);
         setPopulationFitnessCost(fitness);
-    }
+    } //sortPopulation()
 
 
     /**
@@ -628,8 +639,14 @@ public class AllInOne2 {
         return false;
     } //hasStudentExamOverlapping()
 
-    //copy by value of orderings and all their values
-    public List<List<Integer>> orderingCopy(List<List<Integer>> orderingToCopy) {
+    /**
+     * copy by value the ordering and all its content
+     * I had to implement this method (having to go through every elem of the list) because the ordering are just copied
+     * by reference otherwise, and produce a huge mess during the selection phase of each iteration
+     * @param orderingToCopy List<List<Integer>>
+     * @return copied ordering List<List<Integer>
+     */
+    public List<List<Integer>> copyOrdering (List<List<Integer>> orderingToCopy) {
     List<List<Integer>> newOrdering = new ArrayList<>();
 
         for (int i = 0; i!= orderingToCopy.size(); ++i) {
@@ -638,13 +655,18 @@ public class AllInOne2 {
                 newOrdering.get(i).add(orderingToCopy.get(i).get(j));
         }
         return newOrdering;
-    }
+    } //copyOrdering()
 
 
     /*-****************************************************************************************************************/
     /*                                          iterate generations                                                   */
     /*-****************************************************************************************************************/
 
+    /**
+     * main function of the iteration process
+     * copy the population to a new generation, apply a random Genetic Algorithm technique to every ordering of the new
+     * generation, calculate their new respective fitness cost, and stores the best fitness cost for later
+     */
     public void iterate () {
         //temporary
         do {
@@ -676,8 +698,15 @@ public class AllInOne2 {
             sb.append(minFitCost);
             addToBestResults(sb.toString()); //return the best fitness cost of the generation
         } while (getGeneration() != getNbGenerations());
-    }
+    } //iterate()
 
+    /**
+     * select randomly a Genetic Algorithm technique for an ordering
+     * The ordering chosen to crossover have to be paired it stores one until a second is chosen
+     * If the ordering is the last in his population and is single for a crossover, chooses again the technique,
+     * leading eventually to another result
+     * @param i int eg. the index in the stored attribute population, leading to an ordering
+     */
     public void selectGATechniqueOnOrdering(int i) {
         int randomNumber;
         randomNumber = randomWithRange(0, 100);
@@ -693,8 +722,13 @@ public class AllInOne2 {
             } else
                 selectGATechniqueOnOrdering(i); //reroll for the ordering
         } //else reproduction so nothing happens
-    }
+    } //selectGATechniqueOrdering()
 
+    /**
+     * implementation of the Selection Genetic Algorithm technique
+     * first sort the population by increasing fitness cost, and then copy the best third of the population to the
+     * wost third
+     */
     public void selection() {
 
         sortPopulation();
@@ -703,8 +737,14 @@ public class AllInOne2 {
         for (int i = 0; i != getCurrentPopulationSize() / 3; ++i)
             overwriteOrderingInPopulation(getCurrentPopulationSize() - 1 - i, getOrderingFromPopulation(i));
             //does not duplicate the fitness cost as well because they will be overwritten in the next step right away
-    }
+    } //selection()
 
+    /**
+     * implementation of the Mutation Genetic Algorithm technique
+     * swap two modules randomly, and put back the ordering in the population
+     * @param ordering List<List<Integer>>
+     * @param index int e.g. the place of the ordering in the population
+     */
     public void mutation(List<List<Integer>> ordering, int index) {
         int rand1= randomWithRange(0, getNbModules() - 1);
         int rand2;
@@ -718,11 +758,22 @@ public class AllInOne2 {
         ordering.get(rand2 / 2).set(rand2 % 2, temp);
         overwriteOrderingInPopulation(index, ordering);
         //swap randomly 2 modules
-    }
+    } //mutation()
 
+    /**
+     * implementation of the Crossover Genetic Algorithm technique
+     * Swap a set of modules of each orderings according to a random cutpoint
+     * Keeps the orderings clean by checking for duplicate modules in the orderings and removing them
+     * @param ordering1 List<List<Integer>>
+     * @param index1 int e.g. the place of the ordering in the population
+     * @param ordering2 List<List<Integer>>
+     * @param index2 int e.g. the place of the ordering in the population
+     */
     public void crossover(List<List<Integer>> ordering1, int index1, List<List<Integer>> ordering2, int index2) {
         int cutPoint = randomWithRange(1, getNbModules() - 2); //must at least cut one module
         List<Integer> temp = new ArrayList<>();
+
+        //swapping
 
         for (int i = 0; i != cutPoint; ++i) {
             temp.add(ordering1.get(i / 2).get(i % 2));
@@ -777,7 +828,7 @@ public class AllInOne2 {
 
         overwriteOrderingInPopulation(index1, ordering1);
         overwriteOrderingInPopulation(index2, ordering2);
-    }
+    } //crossover
 
     /*-****************************************************************************************************************/
     /*                                          output                                                                */
@@ -810,7 +861,12 @@ public class AllInOne2 {
         }
     } //writeToFile()
 
-
+    /**
+     * adds the argument String as a new line in the BestOutputPerGeneration stored value
+     * Pre-condition: It semantically assumes the the argument String is the best fitnessCost of one generation
+     * of orderings
+     * @param fitnessCost String
+     */
     public void addToBestResults (String fitnessCost) {
         if (getBestOutputPerGen() == null)
             setBestOutputPerGen(fitnessCost);
@@ -821,10 +877,11 @@ public class AllInOne2 {
             builder.append(fitnessCost);
             setBestOutputPerGen(builder.toString());
         }
-    }
+    } //addToBestResults()
 
     /**
-     * writes the wanted output ofr the interim submission on the right file
+     * writes the wanted output for the final submission on the given file
+     * @param address String eg. address of the file to write
      */
     public void writeBestResults(String address) {
         String newline = System.getProperty("line.separator");
@@ -844,7 +901,6 @@ public class AllInOne2 {
             }
             builder.append(newline);
         }
-
         builder.append(newline);
 
         //write orderings
@@ -852,7 +908,6 @@ public class AllInOne2 {
         builder.append("Best fitness cost per generation:");
         builder.append(newline);
         builder.append(getBestOutputPerGen());
-
 
         builder.append(newline);
         builder.append(newline);
@@ -875,7 +930,7 @@ public class AllInOne2 {
     } //writeBestResults()
 
     /**
-     * writes the wanted output ofr the interim submission on the right file
+     * write the results of one generation of the orderings population for the optional output
      */
     public void writeResults(String address) {
         String newline = System.getProperty("line.separator");
